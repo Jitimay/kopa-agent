@@ -1,0 +1,149 @@
+### KOPA Agent API Test Collection
+### Use with REST Client extension in VS Code or similar tools
+
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Create Escrow - Successful Case
+POST {{baseUrl}}/api/v1/escrow
+Content-Type: {{contentType}}
+
+{
+  "buyerAddress": "0x1234567890123456789012345678901234567890",
+  "farmerAddress": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  "amount": "1000000",
+  "deliveryConditions": {
+    "expectedDeliveryDate": "2025-02-01T00:00:00Z",
+    "requiredProofType": "qr_scan",
+    "additionalRequirements": []
+  }
+}
+
+### 3. Create Escrow - With Additional Requirements
+POST {{baseUrl}}/api/v1/escrow
+Content-Type: {{contentType}}
+
+{
+  "buyerAddress": "0x2222222222222222222222222222222222222222",
+  "farmerAddress": "0x3333333333333333333333333333333333333333",
+  "amount": "2000000",
+  "deliveryConditions": {
+    "expectedDeliveryDate": "2025-02-15T00:00:00Z",
+    "requiredProofType": "receipt",
+    "additionalRequirements": ["weight", "location"]
+  }
+}
+
+### 4. Submit Valid Delivery Proof (QR Scan)
+# Replace {transactionId} with actual ID from step 2
+POST {{baseUrl}}/api/v1/escrow/{transactionId}/proof
+Content-Type: {{contentType}}
+
+{
+  "proofType": "qr_scan",
+  "timestamp": "2025-01-15T10:00:00Z",
+  "data": {
+    "qrCode": "QR123456789",
+    "metadata": {
+      "location": "Nairobi Market",
+      "weight": "50kg"
+    }
+  },
+  "signature": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
+
+### 5. Submit Valid Delivery Proof (Receipt)
+# Replace {transactionId} with actual ID
+POST {{baseUrl}}/api/v1/escrow/{transactionId}/proof
+Content-Type: {{contentType}}
+
+{
+  "proofType": "receipt",
+  "timestamp": "2025-01-15T10:00:00Z",
+  "data": {
+    "receiptImage": "base64encodedimagedata...",
+    "metadata": {
+      "weight": "50kg",
+      "location": "Nairobi Market"
+    }
+  }
+}
+
+### 6. Submit Invalid Proof - Missing Required Field
+# Replace {transactionId} with actual ID
+POST {{baseUrl}}/api/v1/escrow/{transactionId}/proof
+Content-Type: {{contentType}}
+
+{
+  "proofType": "qr_scan",
+  "timestamp": "2025-01-15T10:00:00Z",
+  "data": {}
+}
+
+### 7. Submit Invalid Proof - Wrong Type
+# Replace {transactionId} with actual ID (from escrow requiring 'receipt')
+POST {{baseUrl}}/api/v1/escrow/{transactionId}/proof
+Content-Type: {{contentType}}
+
+{
+  "proofType": "qr_scan",
+  "timestamp": "2025-01-15T10:00:00Z",
+  "data": {
+    "qrCode": "QR123456789"
+  }
+}
+
+### 8. Query Transaction by ID
+# Replace {transactionId} with actual ID
+GET {{baseUrl}}/api/v1/escrow/{transactionId}
+
+### 9. Query Transactions by Buyer Address
+GET {{baseUrl}}/api/v1/escrow/address/0x1234567890123456789012345678901234567890
+
+### 10. Query Transactions by Farmer Address
+GET {{baseUrl}}/api/v1/escrow/address/0xabcdefabcdefabcdefabcdefabcdefabcdefabcd
+
+### 11. Query Non-existent Transaction
+GET {{baseUrl}}/api/v1/escrow/00000000-0000-0000-0000-000000000000
+
+### 12. Create Escrow - Invalid Request (Missing Fields)
+POST {{baseUrl}}/api/v1/escrow
+Content-Type: {{contentType}}
+
+{
+  "buyerAddress": "0x1234567890123456789012345678901234567890",
+  "amount": "1000000"
+}
+
+### 13. Create Escrow - Invalid Address Format
+POST {{baseUrl}}/api/v1/escrow
+Content-Type: {{contentType}}
+
+{
+  "buyerAddress": "invalid-address",
+  "farmerAddress": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+  "amount": "1000000",
+  "deliveryConditions": {
+    "expectedDeliveryDate": "2025-02-01T00:00:00Z",
+    "requiredProofType": "qr_scan",
+    "additionalRequirements": []
+  }
+}
+
+### 14. Submit Proof - Invalid Transaction ID
+POST {{baseUrl}}/api/v1/escrow/invalid-id/proof
+Content-Type: {{contentType}}
+
+{
+  "proofType": "qr_scan",
+  "timestamp": "2025-01-15T10:00:00Z",
+  "data": {
+    "qrCode": "QR123456789"
+  }
+}
+
+### 15. Test 404 - Invalid Endpoint
+GET {{baseUrl}}/api/v1/invalid-endpoint
